@@ -412,32 +412,20 @@ Proof.
   - exists 1. simpl. reflexivity.
   - exists 1. simpl. subst. reflexivity.
   - destruct IHHce1 as [i'1 IHHce1]. destruct IHHce2 as [i'2 IHHce2].
-    destruct (i'1 <=? i'2) eqn:Hleb.
-    + apply leb_complete in Hleb.
-      assert (IHHce1': ceval_step st c1 i'2 = Some st').
-      { apply ceval_step_more with (i1 := i'1); assumption. }
-      exists (S i'2). simpl. rewrite IHHce1'. rewrite IHHce2. reflexivity.
-    + apply leb_complete_conv in Hleb. apply lt_le_incl in Hleb.
-      assert (IHHce2': ceval_step st' c2 i'1 = Some st'').
-      { apply ceval_step_more with (i1 := i'2); assumption. }
-      exists (S i'1). simpl. rewrite IHHce1. rewrite IHHce2'. reflexivity.
+    exists (S (i'1 + i'2)). simpl.
+    apply ceval_step_more with (i2 := i'1 + i'2) in IHHce1. rewrite IHHce1.
+    apply ceval_step_more with (i2 := i'1 + i'2) in IHHce2. rewrite IHHce2.
+    reflexivity. lia. lia.
   - destruct IHHce as [i' IHHce]. exists (S i'). simpl. rewrite H.
     rewrite IHHce. reflexivity.
   - destruct IHHce as [i' IHHce]. exists (S i'). simpl. rewrite H.
     rewrite IHHce. reflexivity.
   - exists 1. simpl. rewrite H. reflexivity.
   - destruct IHHce1 as [i'1 IHHce1]. destruct IHHce2 as [i'2 IHHce2].
-    destruct (i'1 <=? i'2) eqn:Hleb.
-    + apply leb_complete in Hleb.
-      assert (IHHce1': ceval_step st c i'2 = Some st').
-      { apply ceval_step_more with (i1 := i'1); assumption. }
-      exists (S i'2). simpl. rewrite IHHce1'. rewrite H. rewrite IHHce2.
-      reflexivity.
-    + apply leb_complete_conv in Hleb. apply lt_le_incl in Hleb.
-      assert (IHHce2': ceval_step st' <{ while b do c end }> i'1 = Some st'').
-      { apply ceval_step_more with (i1 := i'2); assumption. }
-      exists (S i'1). simpl. rewrite IHHce1. rewrite IHHce2'. rewrite H.
-      reflexivity.
+    exists (S (i'1 + i'2)). simpl.
+    apply ceval_step_more with (i2 := i'1 + i'2) in IHHce1. rewrite IHHce1.
+    apply ceval_step_more with (i2 := i'1 + i'2) in IHHce2. rewrite IHHce2.
+    rewrite H. reflexivity. lia. lia.
 Qed.
 (** [] *)
 
