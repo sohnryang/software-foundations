@@ -207,16 +207,18 @@ Proof. reflexivity. Qed.
    [X] (inclusive: [1 + 2 + ... + X]) in the variable [Y].  Make sure
    your solution satisfies the test that follows. *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com := <{
+  Y := 0;
+  while X > 0 do
+    Y := Y + X;
+    X := X - 1
+  end
+}>.
 
 Example pup_to_n_1 :
   test_ceval (X !-> 5) pup_to_n
   = Some (0, 15, 0).
-(* FILL IN HERE *) Admitted.
-(* 
 Proof. reflexivity. Qed.
-*)
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (peven)
@@ -225,9 +227,23 @@ Proof. reflexivity. Qed.
     sets [Z] to [1] otherwise.  Use [test_ceval] to test your
     program. *)
 
-(* FILL IN HERE
+Definition check_even : com := <{
+  Z := X;
+  while Z > 1 do
+    Z := Z - 2
+  end
+}>.
 
-    [] *)
+Example check_even_1 :
+  test_ceval (X !-> 42) check_even
+  = Some (42, 0, 0).
+Proof. reflexivity. Qed.
+
+Example check_even_2 :
+  test_ceval (X !-> 7) check_even
+  = Some (7, 0, 1).
+Proof. reflexivity. Qed.
+(** [] *)
 
 (* ################################################################# *)
 (** * Relational vs. Step-Indexed Evaluation *)
@@ -299,7 +315,39 @@ Proof.
     the main ideas to a human reader; do not simply transcribe the
     steps of the formal proof. *)
 
-(* FILL IN HERE *)
+(* Let's prove by induction on i.
+   If i = 0, ceval_step can only produce None so vacuously true.
+   Suppose that the theorem holds for i'.
+   Let's perform case analysis on the program.
+
+   For skip, it's trivial.
+
+   For x := a, it's trivial.
+
+   For c1 ; c2, we consider termination of ceval_step.
+   If ceval_step terminated normally for c1 with gas i' and yielded state s,
+   then by induction hypothesis the relations st =[ c1 ]=> s and
+   s =[ c2 ]=> st' hold. By the definition of ;, we have
+   st = [ c1 ; c2 ]=> st'.
+   If ceval_step did not terminated normally then it is impossible so vacuously
+   true.
+
+   For if statement, we consider the value of beval st b. If the condition is
+   true, by assumption we know that execution of c1 terminates normally with
+   gas i'. By induction hypothesis we know that the relation st =[ c1 ]=> st'
+   holds. We can do the similar for false case. Thus we know that
+   st =[ if b then c1 else c2 end ]=> st' holds.
+
+   For while statement, we again consider the value of beval st b.
+   If the condition is true, we consider the execution of the body.
+   If the body terminated normally with gas i' and yielded state s, by
+   induction hypothesis we know that st =[ c ]=> s holds. Also, by assumption
+   we know that while b do c done terminates with state s and gas i'. Using the
+   induction hypothesis, s =[ while b do c done ]=> st' holds. Thus, we know
+   that st =[ while b do c done ]=> st' holds. If the body did not terminate
+   normally, this is impossible so vacuously true. If the condition is false,
+   we know that ceval_step terminates normally with state st, so by induction
+   hypothesis st =[ while b do c end ]=> st' holds. *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_ceval_step__ceval_inf : option (nat*string) := None.
@@ -354,13 +402,43 @@ induction i1 as [|i1']; intros i2 st st' c Hle Hceval.
     Finish the following proof.  You'll need [ceval_step_more] in a
     few places, as well as some basic facts about [<=] and [plus]. *)
 
+Search ((_ < _) -> _).
 Theorem ceval__ceval_step: forall c st st',
       st =[ c ]=> st' ->
       exists i, ceval_step st c i = Some st'.
 Proof.
   intros c st st' Hce.
   induction Hce.
-  (* FILL IN HERE *) Admitted.
+  - exists 1. simpl. reflexivity.
+  - exists 1. simpl. subst. reflexivity.
+  - destruct IHHce1 as [i'1 IHHce1]. destruct IHHce2 as [i'2 IHHce2].
+    destruct (i'1 <=? i'2) eqn:Hleb.
+    + apply leb_complete in Hleb.
+      assert (IHHce1': ceval_step st c1 i'2 = Some st').
+      { apply ceval_step_more with (i1 := i'1); assumption. }
+      exists (S i'2). simpl. rewrite IHHce1'. rewrite IHHce2. reflexivity.
+    + apply leb_complete_conv in Hleb. apply lt_le_incl in Hleb.
+      assert (IHHce2': ceval_step st' c2 i'1 = Some st'').
+      { apply ceval_step_more with (i1 := i'2); assumption. }
+      exists (S i'1). simpl. rewrite IHHce1. rewrite IHHce2'. reflexivity.
+  - destruct IHHce as [i' IHHce]. exists (S i'). simpl. rewrite H.
+    rewrite IHHce. reflexivity.
+  - destruct IHHce as [i' IHHce]. exists (S i'). simpl. rewrite H.
+    rewrite IHHce. reflexivity.
+  - exists 1. simpl. rewrite H. reflexivity.
+  - destruct IHHce1 as [i'1 IHHce1]. destruct IHHce2 as [i'2 IHHce2].
+    destruct (i'1 <=? i'2) eqn:Hleb.
+    + apply leb_complete in Hleb.
+      assert (IHHce1': ceval_step st c i'2 = Some st').
+      { apply ceval_step_more with (i1 := i'1); assumption. }
+      exists (S i'2). simpl. rewrite IHHce1'. rewrite H. rewrite IHHce2.
+      reflexivity.
+    + apply leb_complete_conv in Hleb. apply lt_le_incl in Hleb.
+      assert (IHHce2': ceval_step st' <{ while b do c end }> i'1 = Some st'').
+      { apply ceval_step_more with (i1 := i'2); assumption. }
+      exists (S i'1). simpl. rewrite IHHce1. rewrite IHHce2'. rewrite H.
+      reflexivity.
+Qed.
 (** [] *)
 
 Theorem ceval_and_ceval_step_coincide: forall c st st',
